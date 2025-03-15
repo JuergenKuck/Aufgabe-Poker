@@ -183,10 +183,6 @@ void printCardsCurrent(int numberCard, int pointsSum, String actor,
   } else {
     printCards0 += '($pointsSum Punkte)';
   }
-
-  print(printCards0);
-  print(printCards1);
-  print(printCards2);
 }
 
 bool isBlackJack(List<String> cards, int pointsSum) {

@@ -47,7 +47,7 @@ void printCardsCurrent(String actor, List<String> cards, String pokerHand) {
       rank = cards[i][0] + cards[i][1];
       suit = cards[i][2];
     }
-    switch (cards[i][1]) {
+    switch (suit) {
       case '♦' || '♥':
         color = '\x1B[31;47m'; // rot auf weiß
       case '♠' || '♣':
@@ -57,23 +57,108 @@ void printCardsCurrent(String actor, List<String> cards, String pokerHand) {
     // printCards += ' ${suits[i]} ${cards[i]} \x1B[0m';
 
     if (rank.length == 1) rank += ' ';
+
     printCards0 += '$color ${suit} ${suit} $colorEnd ';
     printCards1 += '$color  ${rank} $colorEnd ';
     printCards2 += '$color ${suit} ${suit} $colorEnd ';
   }
+  print('');
   print('$printCards0 ($pokerHand)');
   print(printCards1);
   print(printCards2);
+  print('');
 }
 
-String getCards(List<String> cards) {
+String getCards(List<String> hand) {
+  //List<String> hand0 = ["J♥", "10♥", "Q♥", "K♥", "A♥"]; //Royal Flash
+  //List<String> hand0 = ["9♥", "J♥", "10♥", "Q♥", "K♥"]; // Straight Flash
+  List<String> hand0 = ["5♠", "5♥", "5♦", "9♥", "5♣"]; // Four of a Kind
   for (int i = 0; i < 5; i++) {
     String rank = rankMapPoker.keys.elementAt(GetRandom(13));
     String suit = suitSymbols[GetRandom(4)];
-    cards.add(rank + suit);
+    //hand.add(rank + suit);
+    hand.add(hand0[i]);
   }
-  String result = determineHandRank(cards);
+
+  List<int> values = [];
+  List<String> suits = [];
+  separate(hand, values, suits);
+  if (isRoyalFlash(hand, values, suits)) return 'Royal Flash';
+  if (isStraightFlash(hand, values, suits)) return 'Straight Flash';
+  if (isFourOfAKind(hand, values, suits)) return 'Four of a Kind';
+  //String result = determineHandRank(cards);
+  return '';
+}
+
+void separate(List<String> hand, List<int> values, List<String> suits) {
+  values.clear();
+  suits.clear();
+  for (String card in hand) {
+    String value = card.substring(0, card.length - 1); // Karte ohne Farbe
+    String suit = card.substring(card.length - 1); // Farbe der Karte
+    values
+        .add(rankMapPoker[value]!); // Umwandlung des Kartenwertes in eine Zahl
+    suits.add(suit);
+  }
+}
+
+bool isRoyalFlash(List<String> hand, List<int> values, List<String> suits) {
+  return isStraightFlash(hand, values, suits) && values.first == 10;
+}
+
+bool isStraightFlash(List<String> hand, List<int> values, List<String> suits) {
+  bool _isFlash = isFlash(hand, values, suits);
+  bool _isStraight = isStraight(hand, values, suits);
+  return _isFlash && _isStraight;
+}
+
+bool isFourOfAKind(List<String> hand, List<int> values, List<String> suits) {
+  List<int> counts = getCounts(values);
+  bool result = counts.contains(4);
   return result;
+}
+
+List<int> getCounts(List<int> values) {
+  var valueCounts = values.fold(<int, int>{}, (map, value) {
+    map[value] = (map[value] ?? 0) + 1;
+    return map;
+  });
+
+  return valueCounts.values.toList()..sort((a, b) => b - a);
+}
+
+bool isStraight(List<String> hand, List<int> values, List<String> suits) {
+  List<int> _values = [];
+  List<String> _hand = [];
+  for (int i = 0; i < values.length; i++) {
+    _values.add(values[i]);
+    _hand.add(hand[i]);
+  }
+
+  values.sort();
+
+  bool _isStraight = values
+      .asMap()
+      .entries
+      .every((e) => e.key == 0 || values[e.key] == values[e.key - 1] + 1);
+  _isStraight = _isStraight || values.equals([2, 3, 4, 5, 14]);
+  if (_isStraight) {
+    hand.clear();
+    for (int value in values) {
+      for (int i = 0; i < values.length; i++) {
+        if (_values[i] == value) {
+          hand.add(_hand[i]);
+        }
+      }
+    }
+  }
+  separate(hand, values, suits);
+  return _isStraight;
+}
+
+bool isFlash(List<String> hand, List<int> values, List<String> suits) {
+  // Überprüfe, ob alle Karten die gleiche Farbe haben
+  return suits.toSet().length == 1;
 }
 
 String determineHandRank(List<String> hand) {
