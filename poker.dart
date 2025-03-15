@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'global.dart';
 
 Map<String, int> rankMapPoker = {
@@ -72,14 +74,14 @@ void printCardsCurrent(String actor, List<String> cards, String pokerHand) {
 String getCards(List<String> hand) {
   //List<String> hand0 = ["J♥", "10♥", "Q♥", "K♥", "A♥"]; //Royal Flash
   //List<String> hand0 = ["9♥", "J♥", "10♥", "Q♥", "K♥"]; // Straight Flash
-  //List<String> hand0 = ["5♠", "5♥", "5♦", "2♥", "5♣"]; // Four of a Kind
-  //List<String> hand0 = ["2♠", "5♥", "5♦", "2♥", "5♣"]; // Full House
+  //List<String> hand0 = ["2♠", "2♥", "5♦", "2♥", "2♣"]; // Four of a Kind
+  //List<String> hand0 = ["2♠", "5♥", "2♦", "2♥", "5♣"]; // Full House
   //List<String> hand0 = ["5♠", "5♥", "5♦", "5♣", "8♣"]; // Four of a Kind
   //List<String> hand0 = ["2♥", "A♠", "3♠", "4♠", "5♠"]; // Straight
-  //List<String> hand0 = ["5♠", "5♥", "5♦", "2♥", "8♣"]; // Three of a Kind
-  //List<String> hand0 = ["2♠", "8♥", "5♦", "2♥", "5♣"]; // Two Pair
+  //List<String> hand0 = ["2♠", "2♥", "5♦", "2♥", "8♣"]; // Three of a Kind
+  List<String> hand0 = ["2♠", "4♥", "5♦", "2♥", "5♣"]; // Two Pair
   //List<String> hand0 = ["2♠", "8♥", "A♦", "2♥", "5♣"]; // Pair
-  List<String> hand0 = ["2♠", "8♥", "A♦", "7♥", "5♣"]; // Heigh Card
+  //List<String> hand0 = ["2♠", "8♥", "A♦", "7♥", "5♣"]; // Heigh Card
   for (int i = 0; i < 5; i++) {
     String rank = rankMapPoker.keys.elementAt(GetRandom(13));
     String suit = suitSymbols[GetRandom(4)];
@@ -158,12 +160,32 @@ bool isStraightFlash(List<String> hand, List<int> values, List<String> suits) {
 
 bool isFourOfAKind(List<String> hand, List<int> values, List<String> suits) {
   List<int> counts = getCounts(hand, values, suits);
-  return counts.contains(4);
+  bool result = counts.contains(4);
+  if (result && counts[0] == 4) {
+    List<String> _hand = hand.clone();
+    hand.clear();
+    hand.add(_hand[4]);
+    for (int i = 0; i < _hand.length - 1; i++) {
+      hand.add(_hand[i]);
+    }
+  }
+  return result;
 }
 
 bool isFullHouse(List<String> hand, List<int> values, List<String> suits) {
   List<int> counts = getCounts(hand, values, suits);
-  return counts.contains(3) && counts.contains(2);
+  bool result = counts.contains(3) && counts.contains(2);
+
+  if (result && counts[0] == 3) {
+    List<String> _hand = hand.clone();
+    hand.clear();
+    hand.add(_hand[3]);
+    hand.add(_hand[4]);
+    for (int i = 0; i < _hand.length - 2; i++) {
+      hand.add(_hand[i]);
+    }
+  }
+  return result;
 }
 
 bool isFlash(List<String> hand, List<int> values, List<String> suits) {
@@ -187,7 +209,18 @@ bool isStraight(List<String> hand, List<int> values, List<String> suits) {
 
 bool isThreeOfAKind(List<String> hand, List<int> values, List<String> suits) {
   List<int> counts = getCounts(hand, values, suits);
-  return counts.contains(3);
+  bool result = counts.contains(3);
+
+  if (result && counts[0] == 3) {
+    List<String> _hand = hand.clone();
+    hand.clear();
+    hand.add(_hand[3]);
+    hand.add(_hand[4]);
+    for (int i = 0; i < _hand.length - 2; i++) {
+      hand.add(_hand[i]);
+    }
+  }
+  return result;
 }
 
 bool isTwoPair(List<String> hand, List<int> values, List<String> suits) {
@@ -196,7 +229,42 @@ bool isTwoPair(List<String> hand, List<int> values, List<String> suits) {
   for (int count in counts) {
     if (count == 2) sum++;
   }
-  return sum == 2;
+  bool result = sum == 2;
+
+  if (result) {
+    List<int> i2 = [];
+    int i1 = 0;
+    for (int i = 0; i < counts.length; i++) {
+      if (counts[i] == 1) i1 = i;
+      if (counts[i] == 2) i2.add(i);
+    }
+    int i20 = 1;
+    int i21 = 3;
+    if (i1 == 1) {
+      i20 = 0;
+      i1 = 2;
+      i21 = 3;
+    } else if (i1 == 2) {
+      i20 = 0;
+      i21 = 2;
+      i1 = 4;
+    }
+
+    if (values[i20] > values[i21]) {
+      int ib = i21;
+      i21 = i20;
+      i20 = ib;
+    }
+
+    List<String> _hand = hand.clone();
+    hand[0] = _hand[i1];
+    hand[1] = _hand[i20];
+    hand[2] = _hand[i20 + 1];
+    hand[3] = _hand[i21];
+    hand[4] = _hand[i21 + 1];
+    print('$i1,$i20,$i21');
+  }
+  return result;
 }
 
 bool isPair(List<String> hand, List<int> values, List<String> suits) {
@@ -218,6 +286,7 @@ List<int> getCounts(List<String> hand, List<int> values, List<String> suits) {
     map[value] = (map[value] ?? 0) + 1;
     return map;
   });
+  /*
   List<int> _values = [];
   List<String> _hand = [];
   for (int i = 0; i < values.length; i++) {
@@ -238,8 +307,10 @@ List<int> getCounts(List<String> hand, List<int> values, List<String> suits) {
       }
     }
   }
-
-  List<int> counts = valueCounts.values.toList()..sort((a, b) => b - a);
+*/
+  print(hand);
+  print(valueCounts);
+  List<int> counts = valueCounts.values.toList();
   return counts;
 }
 
@@ -292,16 +363,6 @@ String determineHandRank(List<String> hand) {
   return "High Card (${values.last})";
 }
 
-extension on List<int> {
-  bool equals(List<int> list) {
-    if (length != list.length) return false;
-    for (int i = 0; i < length; i++) {
-      if (this[i] != list[i]) return false;
-    }
-    return true;
-  }
-}
-
 void testDetrmineHandRank() {
   List<List<String>> inputLists = [];
   List<String> requiredList = [];
@@ -348,5 +409,25 @@ void testDetrmineHandRank() {
     String result = determineHandRank(inputLists[i]);
     String ok = result == requiredList[i] ? "OK" : "Fehler";
     print('${inputLists[i]} => $result $ok');
+  }
+}
+
+extension on List<int> {
+  bool equals(List<int> list) {
+    if (length != list.length) return false;
+    for (int i = 0; i < length; i++) {
+      if (this[i] != list[i]) return false;
+    }
+    return true;
+  }
+}
+
+extension on List<String> {
+  List<String> clone() {
+    List<String> result = [];
+    for (int i = 0; i < length; i++) {
+      result.add(this[i]);
+    }
+    return result;
   }
 }
