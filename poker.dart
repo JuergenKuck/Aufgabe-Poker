@@ -1,40 +1,20 @@
-import 'dart:developer';
 import 'dart:math';
-
 import 'global.dart';
 
-Map<String, int> rankMapPoker = {
-  "2": 2,
-  "3": 3,
-  "4": 4,
-  "5": 5,
-  "6": 6,
-  "7": 7,
-  "8": 8,
-  "9": 9,
-  "10": 10,
-  "J": 11,
-  "Q": 12,
-  "K": 13,
-  "A": 14
-};
+bool gamePoker() {
+  printHeader('Poker - Spielbeginn');
 
-void gamePoker() {
-  //test();
-  // testDetrmineHandRank();
+  List<String> hand = getHand();
+  List<bool> keepHand = [];
+  String pokerHand = interpreteHand(hand, keepHand);
+  printCardsCurrent('Spieler', hand, pokerHand);
+  if (jaNein("Möchtest Du ziehen?")) {
+    hand = generateNewHand(hand, keepHand);
+    pokerHand = interpreteHand(hand, keepHand);
+    printCardsCurrent('Neu    ', hand, pokerHand);
+  }
 
-  List<String> cards = [];
-  String pokerHand = getCards(cards);
-  printCardsCurrent('Spieler', cards, pokerHand);
-
-/*
-  // Spieler Karten
-  List<String> playerCards = [];
-
-  // Bank: Kommentare analog Spieler
-  List<String> bankCards = [];
-  cardsPoker(playerCards);
-  */
+  return jaNein("Möchtest Du noch ein Spiel machen?");
 }
 
 void printCardsCurrent(String actor, List<String> cards, String pokerHand) {
@@ -75,6 +55,18 @@ void printCardsCurrent(String actor, List<String> cards, String pokerHand) {
   print('');
 }
 
+List<String> getHand() {
+  List<String> hand = [];
+//  String pokerHand = getCards(cards);
+  for (int i = 0; i < 5; i++) {
+    String rank = rankMapPoker.keys.elementAt(GetRandom(13));
+    String suit = suitSymbols[GetRandom(4)];
+    hand.add(rank + suit);
+  }
+  sortHand(hand);
+  return hand;
+}
+
 void test() {
   clearTerminal();
 
@@ -88,43 +80,57 @@ void test() {
 String getCards(List<String> hand) {
   List<String> hand0;
   hand0 = ["J♥", "10♥", "Q♥", "K♥", "A♥"]; //Royal Flash
+
   hand0 = ["9♥", "J♥", "10♥", "Q♥", "K♥"]; // Straight Flash
-  hand0 = ["8♠", "8♥", "5♦", "8♥", "8♣"]; // Four of a Kind
+  hand0 = ["8♠", "8♥", "5♦", "8♥", "8♣"]; // Four of a Kind (1)
+  hand0 = ["8♠", "8♥", "A♦", "8♥", "8♣"]; // Four of a Kind (2)
+
   hand0 = ["2♠", "5♥", "5♦", "2♥", "5♣"]; // Full House
   hand0 = ["2♥", "A♠", "3♠", "4♠", "5♠"]; // Straight
   hand0 = ["8♠", "2♥", "2♦", "5♥", "2♣"]; // Three of a Kind (1)
   hand0 = ["5♠", "2♥", "5♦", "5♥", "8♣"]; // Three of a Kind (2)
   hand0 = ["8♠", "2♥", "8♦", "5♥", "8♣"]; // Three of a Kind (3)
-  //hand0 = ["2♠", "4♥", "5♦", "4♥", "5♣"]; // Two Pair (1)
-  //hand0 = ["2♠", "2♥", "4♦", "5♥", "5♣"]; // Two Pair (2)
-  //hand0 = ["2♠", "4♥", "2♦", "4♥", "5♣"]; // Two Pair (3)
 
-  //hand0 = ["8♠", "2♥", "2♦", "7♥", "5♣"]; // Pair (1)
-  //hand0 = ["5♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (2)
-  //hand0 = ["8♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (3)
-  //hand0 = ["A♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (4)
-  //hand0 = ["2♠", "8♥", "A♦", "7♥", "5♣"]; // Heigh Card
+  hand0 = ["2♠", "4♥", "5♦", "4♥", "5♣"]; // Two Pair (1)
+  hand0 = ["2♠", "2♥", "4♦", "5♥", "5♣"]; // Two Pair (2)
+  hand0 = ["2♠", "4♥", "2♦", "4♥", "5♣"]; // Two Pair (3)
+
+  hand0 = ["8♠", "2♥", "2♦", "7♥", "5♣"]; // Pair (1)
+  hand0 = ["5♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (2)
+  hand0 = ["8♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (3)
+  hand0 = ["A♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (4)
+
+  hand0 = ["2♠", "8♥", "A♦", "7♥", "5♣"]; // Heigh Card
+  /*
+*/
+
   for (int i = 0; i < 5; i++) {
     String rank = rankMapPoker.keys.elementAt(GetRandom(13));
     String suit = suitSymbols[GetRandom(4)];
+
     hand.add(hand0[i]);
   }
   sortHand(hand);
-  return interpreteHand(hand);
+  List<bool> keepHand = [];
+  String result = interpreteHand(hand, keepHand);
+  List<String> newHand = generateNewHand(hand, keepHand);
+
+  return result;
+
   //String result = determineHandRank(cards);
 }
 
-String interpreteHand(List<String> hand) {
-  if (isRoyalFlash(hand)) return 'Royal Flash';
-  if (isStraightFlash(hand)) return 'Straight Flash';
-  if (isFourOfAKind(hand)) return 'Four of a Kind';
-  if (isFullHouse(hand)) return 'Full House';
-  if (isFlash(hand)) return 'Flash';
-  if (isStraight(hand)) return 'Straight';
-  if (isThreeOfAKind(hand)) return 'Three of a Kind';
-  if (isTwoPair(hand)) return 'Two Pair';
-  if (isPair(hand)) return 'Pair';
-  if (isHeighCard(hand)) return 'Heigh Card';
+String interpreteHand(List<String> hand, List<bool> keepHand) {
+  if (isRoyalFlash(hand, keepHand)) return 'Royal Flash';
+  if (isStraightFlash(hand, keepHand)) return 'Straight Flash';
+  if (isFourOfAKind(hand, keepHand)) return 'Four of a Kind';
+  if (isFullHouse(hand, keepHand)) return 'Full House';
+  if (isFlash(hand, keepHand)) return 'Flash';
+  if (isStraight(hand, keepHand)) return 'Straight';
+  if (isThreeOfAKind(hand, keepHand)) return 'Three of a Kind';
+  if (isTwoPair(hand, keepHand)) return 'Two Pair';
+  if (isPair(hand, keepHand)) return 'Pair';
+  if (isHeighCard(hand, keepHand)) return 'Heigh Card';
   return 'Fehler';
 }
 
@@ -173,32 +179,59 @@ List<int> getValues(List<String> hand) {
   return values;
 }
 
-bool isRoyalFlash(List<String> hand) {
-  bool result = isStraightFlash(hand) && getValues(hand).first == 10;
+List<String> generateNewHand(List<String> hand, List<bool> keepCard) {
+  List<String> newHand = [];
+  List<String> deck = generateDeck();
+  deck.removeWhere(
+      (card) => hand.contains(card)); // Entferne bereits gehaltene Karten
+
+  Random random = Random();
+
+  for (int i = 0; i < hand.length; i++) {
+    if (keepCard[i]) {
+      newHand.add(hand[i]); // Behalte die Karte
+    } else {
+      // Ziehe zufällige neue Karte
+      newHand.add(deck.removeAt(random.nextInt(deck.length)));
+    }
+  }
+  sortHand(newHand);
+  return newHand;
+}
+
+bool isRoyalFlash(List<String> hand, List<bool> keepHand) {
+  bool result = isStraightFlash(hand, keepHand) && getValues(hand).first == 10;
   return result;
 }
 
-bool isStraightFlash(List<String> hand) {
-  bool _isFlash = isFlash(hand);
-  bool _isStraight = isStraight(hand);
+bool isStraightFlash(List<String> hand, List<bool> keepHand) {
+  bool _isFlash = isFlash(hand, keepHand);
+  bool _isStraight = isStraight(hand, keepHand);
   return _isFlash && _isStraight;
 }
 
-bool isFourOfAKind(List<String> hand) {
+bool isFourOfAKind(List<String> hand, List<bool> keepHand) {
   List<int> counts = getCounts(hand);
   bool result = counts.contains(4);
-  if (result && counts[0] == 4) {
+  if (result) {
     List<String> _hand = hand.clone();
-    hand.clear();
-    hand.add(_hand[4]);
-    for (int i = 0; i < _hand.length - 1; i++) {
-      hand.add(_hand[i]);
+
+    if (counts[0] == 4) {
+      hand[0] = _hand[4];
+      for (int i = 0; i < _hand.length - 1; i++) {
+        hand[i + 1] = _hand[i];
+      }
     }
   }
+
+  if (result) {
+    keepHand.replace([false, true, true, true, true]);
+  }
+
   return result;
 }
 
-bool isFullHouse(List<String> hand) {
+bool isFullHouse(List<String> hand, List<bool> keepHand) {
   List<int> counts = getCounts(hand);
   bool result = counts.contains(3) && counts.contains(2);
 
@@ -214,12 +247,12 @@ bool isFullHouse(List<String> hand) {
   return result;
 }
 
-bool isFlash(List<String> hand) {
+bool isFlash(List<String> hand, List<bool> keepHand) {
   // Überprüfe, ob alle Karten die gleiche Farbe haben
   return getSuits(hand).toSet().length == 1;
 }
 
-bool isStraight(List<String> hand) {
+bool isStraight(List<String> hand, List<bool> keepHand) {
   List<int> values = getValues(hand);
   bool _isStraight = false;
   bool isWheelStraight = values.equals([14, 2, 3, 4, 5]);
@@ -236,7 +269,7 @@ bool isStraight(List<String> hand) {
   return _isStraight || isWheelStraight;
 }
 
-bool isThreeOfAKind(List<String> hand) {
+bool isThreeOfAKind(List<String> hand, List<bool> keepHand) {
   List<int> counts = getCounts(hand);
   bool result = counts.contains(3);
 
@@ -258,10 +291,13 @@ bool isThreeOfAKind(List<String> hand) {
       }
     }
   }
+  if (result) {
+    keepHand.replace([false, false, true, true, true]);
+  }
   return result;
 }
 
-bool isTwoPair(List<String> hand) {
+bool isTwoPair(List<String> hand, List<bool> keepHand) {
   List<int> values = getValues(hand);
   List<int> counts = getCounts(hand);
   int sum = 0;
@@ -287,10 +323,14 @@ bool isTwoPair(List<String> hand) {
       }
     }
   }
+  if (result) {
+    keepHand.replace([false, true, true, true, true]);
+  }
+
   return result;
 }
 
-bool isPair(List<String> hand) {
+bool isPair(List<String> hand, List<bool> keepHand) {
   List<int> counts = getCounts(hand);
   bool result = counts.contains(2);
 
@@ -311,16 +351,25 @@ bool isPair(List<String> hand) {
       }
     }
   }
+  if (result) {
+    keepHand.replace([false, false, false, true, true]);
+  }
+
   return result;
 }
 
-bool isHeighCard(List<String> hand) {
+bool isHeighCard(List<String> hand, List<bool> keepHand) {
   List<int> counts = getCounts(hand);
   int sum = 0;
   for (int count in counts) {
     if (count == 1) sum++;
   }
-  return sum == 5;
+  bool result = sum == 5;
+
+  if (result) {
+    keepHand.replace([false, false, false, false, true]);
+  }
+  return result;
 }
 
 List<int> getCounts(List<String> hand) {
@@ -456,5 +505,14 @@ extension ListClone<T> on List<T> {
       result.add(this[i]);
     }
     return result;
+  }
+}
+
+extension ListReplace<T> on List<T> {
+  void replace(List<T> list) {
+    this.clear();
+    for (T item in list) {
+      this.add(item);
+    }
   }
 }

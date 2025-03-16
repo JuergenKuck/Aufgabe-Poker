@@ -1,6 +1,22 @@
 import 'dart:io';
 import 'dart:math';
 
+Map<String, int> rankMapPoker = {
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 6,
+  "7": 7,
+  "8": 8,
+  "9": 9,
+  "10": 10,
+  "J": 11,
+  "Q": 12,
+  "K": 13,
+  "A": 14
+};
+
 List<String> suitSymbols = ['♦', '♥', '♠', '♣'];
 
 String colorRedWhite = '\x1B[1;31;47m'; // rot auf weiß
@@ -49,6 +65,23 @@ void printDraw() {
   print(
       '$colorBlackYellow Noch mal gutgegangen! Ihr habt unentschieden gespielt!$colorEnd');
   printLine();
+}
+
+bool jaNein(String header) {
+  print('');
+  print("$header 'J'a oder 'N'ein?");
+
+  String answerStr = stdin.readLineSync() ?? 'J';
+  bool answer;
+  print('');
+  switch (answerStr) {
+    case 'N' || 'n':
+      answer = false;
+    case 'J' || 'j':
+    default:
+      answer = true;
+  }
+  return answer;
 }
 
 void clearTerminal() {

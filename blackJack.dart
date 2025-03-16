@@ -189,19 +189,3 @@ bool isBlackJack(List<String> cards, int pointsSum) {
   return cards.length == 2 && pointsSum == 21;
 }
 
-bool jaNein(String header) {
-  print('');
-  print("$header 'J'a oder 'N'ein?");
-
-  String answerStr = stdin.readLineSync() ?? 'J';
-  bool answer;
-  print('');
-  switch (answerStr) {
-    case 'N' || 'n':
-      answer = false;
-    case 'J' || 'j':
-    default:
-      answer = true;
-  }
-  return answer;
-}

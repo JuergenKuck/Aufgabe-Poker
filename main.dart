@@ -1,10 +1,14 @@
-import 'PrintFunctions.dart';
 import 'blackjack.dart';
+import 'global.dart';
 import 'poker.dart';
 
 void main() {
   clearTerminal();
-  gamePoker();
+
+  bool isGame = true;
+  while (isGame) {
+    isGame = gamePoker();
+  }
 
   /* BlackJack:
   bool isGame = true;
