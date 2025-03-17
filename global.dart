@@ -68,12 +68,12 @@ void printDraw() {
 }
 
 bool jaNein(String header) {
-  print('');
+  //print('');
   print("$header 'J'a oder 'N'ein?");
 
   String answerStr = stdin.readLineSync() ?? 'J';
   bool answer;
-  print('');
+  //print('');
   switch (answerStr) {
     case 'N' || 'n':
       answer = false;

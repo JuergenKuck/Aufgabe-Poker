@@ -1,29 +1,36 @@
+import 'dart:io';
 import 'dart:math';
 import 'global.dart';
 
 bool gamePoker() {
-  printHeader('Poker - Spielbeginn');
+  printHeader('Poker - Karten austauschen (z.B. "123" o. null)');
 
   List<String> hand = getHand();
   List<bool> keepHand = [];
   String pokerHand = interpreteHand(hand, keepHand);
-  printCardsCurrent('Spieler', hand, pokerHand);
-  if (jaNein("Möchtest Du ziehen?")) {
+  printCardsCurrent('Spieler', hand, pokerHand, false);
+  if (isExchange('Möchtest Du Karten austauschen?')) {
+    printHeader('Karten austauschen (z.B. "123" o. null)');
+    printCardsCurrent('Spieler', hand, pokerHand, true);
+
     hand = generateNewHand(hand, keepHand);
     pokerHand = interpreteHand(hand, keepHand);
-    printCardsCurrent('Neu    ', hand, pokerHand);
+    printCardsCurrent('Neu    ', hand, pokerHand, false);
   }
 
   return jaNein("Möchtest Du noch ein Spiel machen?");
 }
 
-void printCardsCurrent(String actor, List<String> cards, String pokerHand) {
+void printCardsCurrent(
+    String actor, List<String> cards, String pokerHand, isNumbering) {
   String actor1 = actor.length < 7 ? actor + '   ' : actor;
   String printCards0 = "$actor1: ";
   String printCards1 = '         ';
   String printCards2 = '         ';
+  String printCards3 = '         ';
   String color = '';
   for (int i = 0; i < cards.length; i++) {
+    printCards3 += '${i + 1}     ';
     String rank;
     String suit;
     if (cards[i].length == 2) {
@@ -43,16 +50,15 @@ void printCardsCurrent(String actor, List<String> cards, String pokerHand) {
     // printCards += ' ${suits[i]} ${cards[i]} \x1B[0m';
 
     if (rank.length == 1) rank += ' ';
-
     printCards0 += '$color ${suit} ${suit} $colorEnd ';
     printCards1 += '$color  ${rank} $colorEnd ';
     printCards2 += '$color ${suit} ${suit} $colorEnd ';
   }
-  print('');
+  print(printCards3);
   print('$printCards0 ($pokerHand)');
   print(printCards1);
   print(printCards2);
-  print('');
+  //print('');
 }
 
 List<String> getHand() {
@@ -71,10 +77,10 @@ void test() {
   clearTerminal();
 
   List<String> hand = ["K♠", "K♦", "7♣", "5♠", "2♥"]; // Beispiel: One Pair
-  printCardsCurrent('Spieler', hand, '');
+  printCardsCurrent('Spieler', hand, '', false);
 
   List<String> newHand = exchangeCards(hand);
-  printCardsCurrent('Nachher', newHand, '');
+  printCardsCurrent('Nachher', newHand, '', false);
 }
 
 String getCards(List<String> hand) {
@@ -380,6 +386,19 @@ List<int> getCounts(List<String> hand) {
   });
   List<int> counts = valueCounts.values.toList();
   return counts;
+}
+
+List<bool> giveExchangeInfo(String header) {
+  print('$header (Nummern z.B. "123" o. null)?');
+  String answerStr = stdin.readLineSync() ?? '';
+  List<bool> keysHand = [false, false, false, false, false];
+  for (int i = 0; i < 5; i++) {
+    String iStr = (i + 1).toString();
+    for (int k = 0; k < answerStr.length; k++) {
+      if (answerStr[k] == iStr) keysHand[i] = true;
+    }
+  }
+  return keysHand;
 }
 
 List<String> exchangeCards(List<String> hand) {
