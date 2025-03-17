@@ -1,4 +1,4 @@
-import 'global.dart';
+import 'kuck_io.dart';
 import 'poker.dart';
 
 void main() {
@@ -8,11 +8,4 @@ void main() {
   while (isGame) {
     isGame = gamePoker();
   }
-
-  /* BlackJack:
-  bool isGame = true;
-  while (isGame) {
-    isGame = blackjack();
-  }
-  */
 }

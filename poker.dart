@@ -1,13 +1,14 @@
 import 'dart:io';
-import 'dart:math';
 import 'global.dart';
+
+import 'kuck_io.dart';
 
 List<String> handPlayer = [];
 List<String> handComputer = [];
 List<bool> changeCardsInfoPlayer = [];
 List<bool> changeCardsInfoComputer = [];
-String pokerHandPlayer = '';
-String pokerHandComputer = '';
+PokerHand pokerHandPlayer = PokerHand.none;
+PokerHand pokerHandComputer = PokerHand.none;
 
 List<bool> changeCardsInfoBlank = [false, false, false, false, false];
 
@@ -29,27 +30,69 @@ bool gamePoker() {
   showHand('Spieler ', handPlayer, pokerHandPlayer, 0);
   showHand('Computer', handComputer, pokerHandComputer, 0);
 
-  /*
-  printHeader('Karten aktuell');
-  printCardsCurrent('Spieler', hand, pokerHand, true);
-  hand = generateNewHand(hand, keepHand);
-  pokerHand = interpreteHand(hand, keepHand);
-  printCardsCurrent('Getauscht', hand, pokerHand, false);
-  */
   print('');
-  print('To Do: 1. Vergleichen Spieler und Computer => Sieger des Spiels');
-  print('       2. Statisitk über gewonnene und verlorene Spiele.\n');
+  String resultOfGame =
+      "Du hast " + (playerIsWinner() ? "gewonnen!" : "leider verloren!");
+  print(resultOfGame);
+  print('');
 
   return jaNein("Möchtest Du noch ein Spiel machen?");
 }
 
+bool playerIsWinner() {
+  bool result = false;
+  // 1. Check: Wer der Spieler die höhere PokerHand hat
+  //    (z.B. ist RoyalFlash besser als FullHouse)
+  if (pokerHandPlayer.index < pokerHandComputer.index) {
+    return true;
+  }
+  // 2. Wenn beide die gleiche PokerHand haben, werden die einzelnen Karten
+  //    verglichen. Da beide Hände von klein nach groß sortiert sind,
+  //    ist dass nicht sehr aufwendig.
+  if (pokerHandPlayer.index == pokerHandComputer.index) {
+    List<int> ValuesPlayer = getValues(handPlayer);
+    List<int> ValuesComputer = getValues(handComputer);
+    for (var i = 4; i >= 0; i--) {
+      if (ValuesPlayer[i] != ValuesComputer[i]) {
+        result = ValuesPlayer[i] > ValuesComputer[i];
+        return result;
+      }
+    }
+  }
+  // 3. Spieler hat verloren.
+  return result;
+}
+
+PokerHand interpreteHand(List<String> hand, List<bool> changeCardsInfo) {
+  // Es gestartet von der bestmöglichen PokerHand bis zur schlechtmöglichen
+  // untersucht, welche PokerHand das das Balatt (hand) hat und
+  // das zugehörige enum zurückgegeben.
+
+  if (isRoyalFlash(hand, changeCardsInfo)) return PokerHand.RoyalFlash;
+  if (isStraightFlash(hand, changeCardsInfo)) return PokerHand.StraightFlash;
+  if (isFourOfAKind(hand, changeCardsInfo)) return PokerHand.FourOfAKind;
+  if (isFullHouse(hand, changeCardsInfo)) return PokerHand.FullHouse;
+  if (isFlash(hand, changeCardsInfo)) return PokerHand.Flash;
+  if (isStraight(hand, changeCardsInfo)) return PokerHand.Straight;
+  if (isThreeOfAKind(hand, changeCardsInfo)) return PokerHand.ThreeOfAKind;
+  if (isTwoPair(hand, changeCardsInfo)) return PokerHand.TwoPair;
+  if (isPair(hand, changeCardsInfo)) return PokerHand.Pair;
+  if (isHeighCard(hand, changeCardsInfo)) return PokerHand.HeighCard;
+  return PokerHand.none;
+}
+
 void changeHands() {
+  // Es werden die Karten der Blätter so ausgetauscht, wie es in
+  // den changeCardsInfos vorgegeben ist.
+  // Dann werden die sich hieraus ergebenen PokerHands neu bestimmt.
   changeHand(handPlayer, changeCardsInfoPlayer);
   changeHand(handComputer, changeCardsInfoComputer);
   evalPokerHands();
 }
 
 void changeHand(List<String> hand, List<bool> changeCardsInfo) {
+  // Es werden die Karten eines Blattes so ausgetauscht, wie es in
+  // der changeCardsInfo vorgegeben ist.
   for (int i = 0; i < hand.length; i++) {
     if (changeCardsInfo[i]) {
       // Ziehe zufällige neue Karte
@@ -60,6 +103,8 @@ void changeHand(List<String> hand, List<bool> changeCardsInfo) {
 }
 
 void fillChangeCardsInfo(List<bool> changeCardsInfo, String changeStr) {
+  // es wird der vom Player eingegeben String zu Kartentausch ausgewertet
+  // und das Ergebnis in das changeCardsInfo zurückgeschrieben.
   for (int i = 0; i < 5; i++) {
     changeCardsInfo[i] = false;
     String iStr = (i + 1).toString();
@@ -73,9 +118,12 @@ void fillChangeCardsInfo(List<bool> changeCardsInfo, String changeStr) {
 }
 
 void showHand(
-    String actor, List<String> hand, String pokerHand, changeCardsComputer) {
-  // Zeigt ds aktuelle Blatt des Spielers oder des Comuuters an
+    // Zeigt ds aktuelle Blatt des Akteurs (Spielers oder Computers) an.
 
+    String actor,
+    List<String> hand,
+    PokerHand pokerHand,
+    changeCardsComputer) {
   String actor1 = actor.length < 8 ? actor + '   ' : actor;
   String printCards0 = "$actor1: ";
   String printCards1 = '          ';
@@ -114,13 +162,14 @@ void showHand(
   if (changeCardsComputer != 0)
     printCards2 += ' Der Computer hat $changeCardsComputer Karten getauscht.';
   print(printCards3);
-  print('$printCards0 Blatt: $pokerHand');
+  print('$printCards0 Blatt: ${pokerHand.name}');
   print(printCards1);
   print(printCards2);
   //print('');
 }
 
 int getNumberChangeCards(List<bool> changeCardsInfo) {
+  // Berechnet die Anzahl der in der changeCardInfo vorgegebenen Kartenzüge.
   int result = 0;
   for (var changeCard in changeCardsInfo) {
     if (changeCard) {
@@ -131,26 +180,28 @@ int getNumberChangeCards(List<bool> changeCardsInfo) {
 }
 
 void evalStartHands() {
-  //draws the hands of Player and Computer
+  //Zieht neue Blätter(Hands) für Player and Computer
+  //und bestimmt deren PokerHands.
   fillHand(handPlayer);
   fillHand(handComputer);
   evalPokerHands();
 }
 
 void evalPokerHands() {
-  //eval Pokerhands and possible keepHands
+  //Bestimmt die PokerHands für Player and Computer
   pokerHandPlayer = interpreteHand(handPlayer, changeCardsInfoPlayer);
   pokerHandComputer = interpreteHand(handComputer, changeCardsInfoComputer);
 }
 
 String getCard() {
+  //Zieht eine Karte
   String rank = rankMapPoker.keys.elementAt(GetRandom(13));
   String suit = suitSymbols[GetRandom(4)];
   return rank + suit;
 }
 
 void fillHand(List<String> hand) {
-  //Draws 5 card for a hand
+  // Zieht die 5 Karten füür ein Blatt(Hand) und sortiert sie,
   hand.clear();
   for (int i = 0; i < 5; i++) {
     hand.add(getCard());
@@ -158,74 +209,9 @@ void fillHand(List<String> hand) {
   sortHand(hand);
 }
 
-void test() {
-  clearTerminal();
-
-  List<String> hand = ["K♠", "K♦", "7♣", "5♠", "2♥"]; // Beispiel: One Pair
-  // printCardsCurrent('Spieler', hand, '', false);
-
-  List<String> newHand = exchangeCards(hand);
-  //printCardsCurrent('Nachher', newHand, '', false);
-}
-
-String getCards(List<String> hand) {
-  List<String> hand0;
-  hand0 = ["J♥", "10♥", "Q♥", "K♥", "A♥"]; //Royal Flash
-
-  hand0 = ["9♥", "J♥", "10♥", "Q♥", "K♥"]; // Straight Flash
-  hand0 = ["8♠", "8♥", "5♦", "8♥", "8♣"]; // Four of a Kind (1)
-  hand0 = ["8♠", "8♥", "A♦", "8♥", "8♣"]; // Four of a Kind (2)
-
-  hand0 = ["2♠", "5♥", "5♦", "2♥", "5♣"]; // Full House
-  hand0 = ["2♥", "A♠", "3♠", "4♠", "5♠"]; // Straight
-  hand0 = ["8♠", "2♥", "2♦", "5♥", "2♣"]; // Three of a Kind (1)
-  hand0 = ["5♠", "2♥", "5♦", "5♥", "8♣"]; // Three of a Kind (2)
-  hand0 = ["8♠", "2♥", "8♦", "5♥", "8♣"]; // Three of a Kind (3)
-
-  hand0 = ["2♠", "4♥", "5♦", "4♥", "5♣"]; // Two Pair (1)
-  hand0 = ["2♠", "2♥", "4♦", "5♥", "5♣"]; // Two Pair (2)
-  hand0 = ["2♠", "4♥", "2♦", "4♥", "5♣"]; // Two Pair (3)
-
-  hand0 = ["8♠", "2♥", "2♦", "7♥", "5♣"]; // Pair (1)
-  hand0 = ["5♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (2)
-  hand0 = ["8♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (3)
-  hand0 = ["A♠", "2♥", "A♦", "8♥", "5♣"]; // Pair (4)
-
-  hand0 = ["2♠", "8♥", "A♦", "7♥", "5♣"]; // Heigh Card
-  /*
-*/
-
-  for (int i = 0; i < 5; i++) {
-    String rank = rankMapPoker.keys.elementAt(GetRandom(13));
-    String suit = suitSymbols[GetRandom(4)];
-
-    hand.add(hand0[i]);
-  }
-  sortHand(hand);
-  List<bool> keepHand = [];
-  String result = interpreteHand(hand, keepHand);
-  List<String> newHand = generateNewHand(hand, keepHand);
-
-  return result;
-
-  //String result = determineHandRank(cards);
-}
-
-String interpreteHand(List<String> hand, List<bool> hangeCardsInfo) {
-  if (isRoyalFlash(hand, hangeCardsInfo)) return 'Royal Flash';
-  if (isStraightFlash(hand, hangeCardsInfo)) return 'Straight Flash';
-  if (isFourOfAKind(hand, hangeCardsInfo)) return 'Four of a Kind';
-  if (isFullHouse(hand, hangeCardsInfo)) return 'Full House';
-  if (isFlash(hand, hangeCardsInfo)) return 'Flash';
-  if (isStraight(hand, hangeCardsInfo)) return 'Straight';
-  if (isThreeOfAKind(hand, hangeCardsInfo)) return 'Three of a Kind';
-  if (isTwoPair(hand, hangeCardsInfo)) return 'Two Pair';
-  if (isPair(hand, hangeCardsInfo)) return 'Pair';
-  if (isHeighCard(hand, hangeCardsInfo)) return 'Heigh Card';
-  return 'Fehler';
-}
-
 void sortHand(List<String> hand) {
+  //Sortiert das Blatt(Hand)
+
   List<int> values = getValues(hand);
   List<String> suits = getSuits(hand);
 
@@ -252,6 +238,7 @@ void sortHand(List<String> hand) {
 }
 
 List<String> getSuits(List<String> hand) {
+  // Gibt die Farben('♦', '♥', '♠', '♣') des Blatts(Hand) zurück.
   List<String> suits = [];
   for (String card in hand) {
     String suit = card.substring(card.length - 1); // Farbe der Karte
@@ -261,6 +248,7 @@ List<String> getSuits(List<String> hand) {
 }
 
 List<int> getValues(List<String> hand) {
+  // Gibt die Werte (2-14) des Blatts(Hand) zurück.
   List<int> values = [];
   for (String card in hand) {
     String value = card.substring(0, card.length - 1); // Karte ohne Farbe
@@ -270,39 +258,31 @@ List<int> getValues(List<String> hand) {
   return values;
 }
 
-List<String> generateNewHand(List<String> hand, List<bool> keepCard) {
-  List<String> newHand = [];
-  List<String> deck = generateDeck();
-  deck.removeWhere(
-      (card) => hand.contains(card)); // Entferne bereits gehaltene Karten
-
-  Random random = Random();
-
-  for (int i = 0; i < hand.length; i++) {
-    if (keepCard[i]) {
-      newHand.add(hand[i]); // Behalte die Karte
-    } else {
-      // Ziehe zufällige neue Karte
-      newHand.add(deck.removeAt(random.nextInt(deck.length)));
-    }
-  }
-  sortHand(newHand);
-  return newHand;
-}
-
 bool isRoyalFlash(List<String> hand, List<bool> changeCardsInfo) {
+  // Überprüft auf RoyalFlash (Höchste Straße in einer Farbe)
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall keine.
+
   bool result =
       isStraightFlash(hand, changeCardsInfo) && getValues(hand).first == 10;
   return result;
 }
 
 bool isStraightFlash(List<String> hand, List<bool> changeCardsInfo) {
+  // Überprüft auf StraightFlash
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall keine.
+
   bool _isFlash = isFlash(hand, changeCardsInfo);
   bool _isStraight = isStraight(hand, changeCardsInfo);
   return _isFlash && _isStraight;
 }
 
 bool isFourOfAKind(List<String> hand, List<bool> changeCardsInfo) {
+  // Überprüft auf FourOfAKind (Vierling)
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall eine.
+
   List<int> counts = getCounts(hand);
   bool result = counts.contains(4);
   if (result) {
@@ -324,6 +304,10 @@ bool isFourOfAKind(List<String> hand, List<bool> changeCardsInfo) {
 }
 
 bool isFullHouse(List<String> hand, List<bool> changeCardsInfo) {
+  // Überprüft auf FullHouse
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall keine.
+
   List<int> counts = getCounts(hand);
   bool result = counts.contains(3) && counts.contains(2);
 
@@ -340,11 +324,18 @@ bool isFullHouse(List<String> hand, List<bool> changeCardsInfo) {
 }
 
 bool isFlash(List<String> hand, List<bool> changeCardsInfo) {
-  // Überprüfe, ob alle Karten die gleiche Farbe haben
+  // Überprüft auf Flash (alle Karten gleiche Farbe)
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall keine.
+
   return getSuits(hand).toSet().length == 1;
 }
 
 bool isStraight(List<String> hand, List<bool> changeCardsInfo) {
+  // Überprüft auf Straight(Straße)
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall keine.
+
   List<int> values = getValues(hand);
   bool _isStraight = false;
   bool isWheelStraight = values.equals([14, 2, 3, 4, 5]);
@@ -362,6 +353,10 @@ bool isStraight(List<String> hand, List<bool> changeCardsInfo) {
 }
 
 bool isThreeOfAKind(List<String> hand, List<bool> changeCardsInfo) {
+  // Überprüft auf ThreeOfAKind(Drilling)
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall zwei.
+
   List<int> counts = getCounts(hand);
   bool result = counts.contains(3);
 
@@ -390,6 +385,10 @@ bool isThreeOfAKind(List<String> hand, List<bool> changeCardsInfo) {
 }
 
 bool isTwoPair(List<String> hand, List<bool> changeCardsInfo) {
+  //Überprüft auf TwoPair(2 Pärchen)
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall eine.
+
   List<int> values = getValues(hand);
   List<int> counts = getCounts(hand);
   int sum = 0;
@@ -423,6 +422,10 @@ bool isTwoPair(List<String> hand, List<bool> changeCardsInfo) {
 }
 
 bool isPair(List<String> hand, List<bool> changeCardsInfo) {
+  // Überprüft auf Pair(Pärchen)
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall 3.
+
   List<int> counts = getCounts(hand);
   bool result = counts.contains(2);
 
@@ -451,6 +454,10 @@ bool isPair(List<String> hand, List<bool> changeCardsInfo) {
 }
 
 bool isHeighCard(List<String> hand, List<bool> changeCardsInfo) {
+  // Überprüft auf HeighCard(Höchste Karte)
+  // und ermittelt, welche Karten sinnvol ausgetauscht werden können,
+  // 'changeCardsInfo' in diesem Fall vier, alle, bis auf die höchste.
+
   List<int> counts = getCounts(hand);
   int sum = 0;
   for (int count in counts) {
@@ -465,6 +472,8 @@ bool isHeighCard(List<String> hand, List<bool> changeCardsInfo) {
 }
 
 List<int> getCounts(List<String> hand) {
+  // Bestimmt, wieviele Karten jeweils den gleichen Wert haben.
+
   List<int> values = getValues(hand);
   Map<int, int> valueCounts = values.fold(<int, int>{}, (map, value) {
     map[value] = (map[value] ?? 0) + 1;
@@ -474,111 +483,12 @@ List<int> getCounts(List<String> hand) {
   return counts;
 }
 
-List<String> exchangeCards(List<String> hand) {
-  List<int> values = [];
-  List<String> suits = [];
-  List<String> cardSymbols = [];
+// Es follgen 3 List-Extensions, die in obigen Routinen verwendet werden:
+// Die Extensions funktionieren für bool, int und double!
 
-  // Kartenwerte umwandeln
-
-  for (String card in hand) {
-    String value = card.substring(0, card.length - 1);
-    String suit = card.substring(card.length - 1);
-    values.add(rankMapPoker[value]!);
-    suits.add(suit);
-    cardSymbols.add(value);
-  }
-
-  values.sort();
-
-  // Hand-Ranking berechnen
-  Map<int, int> valueCounts = {};
-  for (int value in values) {
-    valueCounts[value] = (valueCounts[value] ?? 0) + 1;
-  }
-
-  List<int> counts = valueCounts.values.toList()..sort((a, b) => b - a);
-  List<int> uniqueValues = valueCounts.keys.toList();
-
-  // Entscheiden, welche Karten getauscht werden sollen
-  List<bool> keepCard = List.filled(5, false);
-
-  if (counts.contains(4)) {
-    // Four of a Kind → 1 Karte tauschen
-    keepCard = values.map((v) => valueCounts[v] == 4).toList();
-  } else if (counts.contains(3) && counts.contains(2)) {
-    // Full House → nichts tauschen
-    keepCard = List.filled(5, true);
-  } else if (counts.contains(3)) {
-    // Three of a Kind → 2 Karten tauschen
-    keepCard = values.map((v) => valueCounts[v] == 3).toList();
-  } else if (counts.where((c) => c == 2).length == 2) {
-    // Two Pair → 1 Karte tauschen
-    keepCard = values.map((v) => valueCounts[v]! >= 2).toList();
-  } else if (counts.contains(2)) {
-    // One Pair → 3 Karten tauschen
-    keepCard = values.map((v) => valueCounts[v] == 2).toList();
-  } else {
-    // High Card (schlechte Hand) → 4 Karten tauschen, nur höchste behalten
-    int maxValue = values.last;
-    keepCard = values.map((v) => v == maxValue).toList();
-  }
-
-  // Neue Karten für die nicht gehaltenen Positionen ziehen
-  return generateNewCards(hand, keepCard);
-}
-
-List<String> generateNewCards(List<String> hand, List<bool> keepCard) {
-  List<String> newHand = [];
-  List<String> deck = generateDeck();
-  deck.removeWhere(
-      (card) => hand.contains(card)); // Entferne bereits gehaltene Karten
-
-  Random random = Random();
-
-  for (int i = 0; i < hand.length; i++) {
-    if (keepCard[i]) {
-      newHand.add(hand[i]); // Behalte die Karte
-    } else {
-      // Ziehe zufällige neue Karte
-      newHand.add(deck.removeAt(random.nextInt(deck.length)));
-    }
-  }
-
-  return newHand;
-}
-
-List<String> generateDeck() {
-  List<String> suits = ["♠", "♦", "♣", "♥"];
-  List<String> values = [
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "10",
-    "J",
-    "Q",
-    "K",
-    "A"
-  ];
-  List<String> deck = [];
-
-  for (String suit in suits) {
-    for (String value in values) {
-      deck.add("$value$suit");
-    }
-  }
-
-  return deck;
-}
-
-// Vergleicht, ob die übergebene Liste gkeich der Liste ist.
-// Funktioniert aktuell nur für bool, int und double und nicht für Klassen!
 extension ListEqual<T> on List<T> {
+  // Vergleicht, ob die Elemente der übergebene Liste gleich denen der Liste ist.
+
   bool equals(List<T> list) {
     if (length != list.length) return false;
     for (int i = 0; i < length; i++) {
@@ -587,10 +497,10 @@ extension ListEqual<T> on List<T> {
     return true;
   }
 }
-// Gibt einen Clone der Liste zurück.
-// Funktioniert aktuell nur für bool, int und double und nicht für Klassen!
 
 extension ListClone<T> on List<T> {
+  // Gibt einen Clone der Liste zurück.
+
   List<T> clone() {
     List<T> result = [];
     for (int i = 0; i < length; i++) {
@@ -601,6 +511,8 @@ extension ListClone<T> on List<T> {
 }
 
 extension ListReplace<T> on List<T> {
+  // Ersetzt die Elemente der Liste durch die übergebene Liste.
+
   void replace(List<T> list) {
     this.clear();
     for (T item in list) {
