@@ -1,7 +1,45 @@
 import 'dart:io';
-import 'global.dart';
+import 'dart:math';
 
 import 'kuck_io.dart';
+
+// Enum, welches die Ergebnisse für ein Blatt(Hand wiedergibt)
+enum PokerHand {
+  RoyalFlash,
+  StraightFlash,
+  FourOfAKind,
+  FullHouse,
+  Flash,
+  Straight,
+  ThreeOfAKind,
+  TwoPair,
+  Pair,
+  HeighCard,
+  none
+}
+
+// Wertigkeit einer Pokerkarte
+Map<String, int> rankMapPoker = {
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 6,
+  "7": 7,
+  "8": 8,
+  "9": 9,
+  "10": 10,
+  "J": 11,
+  "Q": 12,
+  "K": 13,
+  "A": 14
+};
+
+// Spielfarben
+List<String> suitSymbols = ['♦', '♥', '♠', '♣'];
+
+List<String> deck = []; // Kartendeck
+int nextCardFromDeck = 0; // Nächste Karte
 
 List<String> handPlayer = [];
 List<String> handComputer = [];
@@ -13,14 +51,16 @@ PokerHand pokerHandComputer = PokerHand.none;
 List<bool> changeCardsInfoBlank = [false, false, false, false, false];
 
 bool gamePoker() {
-  printHeader('Poker - Karten ziehen');
+  shuffleDeck(); //Karten mischen
+  printHeader('Poker - Neues Spiel');
+
   evalStartHands();
 
   int numberChangeComputer = getNumberChangeCards(changeCardsInfoComputer);
   showHand('Spieler ', handPlayer, pokerHandPlayer, numberChangeComputer);
   print('');
   print('Möglichkeit zum Kartentausch:');
-  print('  gib die Nummern der Karten, die getauscht werden sollen (z.B.: 123');
+  print('  gib die Nummern der Karten, die getauscht werden sollen, z.B.: 123');
   print('  wenn keine Karte getauscht werden soll, gib <Enter> ein');
   String changeStr = stdin.readLineSync() ?? '';
   fillChangeCardsInfo(changeCardsInfoPlayer, changeStr);
@@ -37,6 +77,31 @@ bool gamePoker() {
   print('');
 
   return jaNein("Möchtest Du noch ein Spiel machen?");
+}
+
+// Neue Funktion zum Erstellen eines Standard-Pokerdecks (52 Karten);
+// wird einmal aufgerufen, hier in main()
+List<String> generateDeck() {
+  for (String suit in suitSymbols) {
+    for (String rank in rankMapPoker.keys) {
+      deck.add("$rank$suit");
+    }
+  }
+  return deck;
+}
+
+// Neue Funktion zum Mischen des Decks;
+// wird am Anfang jeden Spiels aufgerufen
+// Verwendet wird: Fisher-Yates-Shuffle
+void shuffleDeck() {
+  Random random = Random();
+  for (int i = deck.length - 1; i > 0; i--) {
+    int j = random.nextInt(i + 1);
+    // Karten tauschen
+    String temp = deck[i];
+    deck[i] = deck[j];
+    deck[j] = temp;
+  }
 }
 
 bool playerIsWinner() {
@@ -194,10 +259,8 @@ void evalPokerHands() {
 }
 
 String getCard() {
-  //Zieht eine Karte
-  String rank = rankMapPoker.keys.elementAt(GetRandom(13));
-  String suit = suitSymbols[GetRandom(4)];
-  return rank + suit;
+  //Zieht nächste Karte aus dem deck
+  return deck[nextCardFromDeck++];
 }
 
 void fillHand(List<String> hand) {

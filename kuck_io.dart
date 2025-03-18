@@ -44,5 +44,5 @@ bool jaNein(String header) {
 
 void clearTerminal() {
   // ANSI-Escape-Sequenz zum Löschen des Bildschirms und Zurücksetzen des Cursors
-  stdout.write('\x1B[2J\x1B[0;0H');
+  stdout.write('\ec \x1bc');
 }
